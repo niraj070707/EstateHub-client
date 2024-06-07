@@ -1,16 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { getDownloadURL, getStorage, ref, uploadBytesResumable } from 'firebase/storage'
 import { app } from '../firebase'
+import { updateUserFailure, updateUserStart, updateUserSuccess } from '../redux/user/userSlice'
 
 const Profile = () => {
-    const { currentUser } = useSelector((state)=>state.user);
+    const { currentUser, loading, error } = useSelector((state)=>state.user);
+    const dispatch = useDispatch();
     const fileref = useRef(null);
     const [image, setImage] = useState(undefined);
     const [imagePerc, setImagePerc] = useState(0);
     const [uploadImageError, setUploadImageError] = useState(false);
     const [formData, setFormData] = useState({});
-    console.log(imagePerc);
+    const [updateSuccess, setUpdateSuccess] = useState(false);
     console.log(formData);
 
     useEffect(()=>{
@@ -46,10 +48,33 @@ const Profile = () => {
         );
     };
 
+    const handleSubmit = async (ev)=>{
+        ev.preventDefault();
+        try{
+            dispatch(updateUserStart());
+            const result = await fetch(`/api/user/update/${currentUser._id}`, {
+                method : 'POST',
+                headers : {
+                    'Content-Type' : 'application/json',
+                }, 
+                body : JSON.stringify(formData),
+            });
+            const data = await result.json();
+            console.log(data);
+            if(data.success === false){
+                dispatch(updateUserFailure(data.message));
+                return;
+            }
+            dispatch(updateUserSuccess(data));
+            setUpdateSuccess(true);
+        }catch(err){
+            dispatch(updateUserFailure(err.message));
+        }
+    }
     return (
         <div className=' p-3 max-w-lg mx-auto'>
             <h1 className=' text-3xl font-semibold text-center my-7'>Profile</h1>
-            <form className=' flex flex-col gap-4'>
+            <form className=' flex flex-col gap-4' onSubmit={ handleSubmit }>
                 <input type="file" ref={fileref} hidden accept='image/*' onChange={(ev)=>setImage(ev.target.files[0])}/>
                 <img onClick={()=>fileref.current.click()} className=' w-24 h-24 rounded-full self-center ' src={formData.avatar || currentUser.avatar} alt="img" />
                 <div className=' text-sm self-center'>
@@ -59,15 +84,21 @@ const Profile = () => {
                         )
                     }
                 </div>
-                <input onChange={ handleChange } type="text" placeholder='username' id='username' className=' border p-3 rounded-lg'/>
-                <input onChange={ handleChange } type="text" placeholder='email' id='email' className=' border p-3 rounded-lg'/>
-                <input onChange={ handleChange }  type="text" placeholder='password' id='password' className=' border p-3 rounded-lg'/>
-                <button className=' uppercase p-3 hover:opacity-95 rounded-lg bg-slate-700 text-white'>update</button>
+                <input onChange={ handleChange } defaultValue={currentUser.username} type="text" placeholder='username' id='username' className=' border p-3 rounded-lg'/>
+                <input onChange={ handleChange } defaultValue={currentUser.email} type="text" placeholder='email' id='email' className=' border p-3 rounded-lg'/>
+                <input onChange={ handleChange } type="text" placeholder='password' id='password' className=' border p-3 rounded-lg'/>
+                <button disabled={loading} className=' uppercase p-3 hover:opacity-95 rounded-lg bg-slate-700 text-white'>
+                    { loading ? 'Loding..' : 'Update' }
+                </button>
             </form>
             <div className=' flex justify-between mt-5'>
                 <span className='text-red-700 cursor-pointer'>Delete Account</span>
                 <span className='text-red-700 cursor-pointer'>Sign Out</span>
             </div>
+            <p className='text-red-700 mt-5'>{error ? error : ''}</p>
+            <p className='text-green-700 mt-5'>
+                {updateSuccess ? 'User is updated successfully!' : ''}
+            </p>
         </div>
     )
 }
