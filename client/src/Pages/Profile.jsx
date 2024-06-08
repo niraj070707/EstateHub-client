@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { getDownloadURL, getStorage, ref, uploadBytesResumable } from 'firebase/storage'
 import { app } from '../firebase'
 import { deleteUserFailure, deleteUserStart, deleteUserSuccess, signOutUserFailure, signOutUserStart, signOutUserSuccess, updateUserFailure, updateUserStart, updateUserSuccess } from '../redux/user/userSlice'
-
+import { Link } from 'react-router-dom'
 const Profile = () => {
     const { currentUser, loading, error } = useSelector((state)=>state.user);
     const dispatch = useDispatch();
@@ -107,6 +107,7 @@ const Profile = () => {
     return (
         <div className=' p-3 max-w-lg mx-auto'>
             <h1 className=' text-3xl font-semibold text-center my-7'>Profile</h1>
+
             <form className=' flex flex-col gap-4' onSubmit={ handleSubmit }>
                 <input type="file" ref={fileref} hidden accept='image/*' onChange={(ev)=>setImage(ev.target.files[0])}/>
                 <img onClick={()=>fileref.current.click()} className=' hover:opacity-95 cursor-pointer w-24 h-24 rounded-full self-center ' src={formData.avatar || currentUser.avatar} alt="img" />
@@ -123,15 +124,22 @@ const Profile = () => {
                 <button disabled={loading} className=' uppercase p-3 hover:opacity-95 rounded-lg bg-slate-700 text-white'>
                     { loading ? 'Loding..' : 'Update' }
                 </button>
+                <Link className='bg-green-700 text-white p-3 rounded-lg uppercase text-center hover:opacity-95' to={'/createListing'}>
+                    Create Listing
+                </Link>
             </form>
+
             <div className=' flex justify-between mt-5'>
                 <span onClick={ handleDeleteUser } className='text-red-700 cursor-pointer'>Delete Account</span>
                 <span onClick={ handleSignOut } className='text-red-700 cursor-pointer'>Sign Out</span>
             </div>
+
             <p className='text-red-700 mt-5'>{error ? error : ''}</p>
             <p className='text-green-700 mt-5'>
                 {updateSuccess ? 'User is updated successfully!' : ''}
             </p>
+
+
         </div>
     )
 }
