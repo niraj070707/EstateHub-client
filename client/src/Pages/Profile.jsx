@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { getDownloadURL, getStorage, ref, uploadBytesResumable } from 'firebase/storage'
 import { app } from '../firebase'
-import { updateUserFailure, updateUserStart, updateUserSuccess } from '../redux/user/userSlice'
+import { deleteUserFailure, deleteUserStart, deleteUserSuccess, signOutUserFailure, signOutUserStart, signOutUserSuccess, updateUserFailure, updateUserStart, updateUserSuccess } from '../redux/user/userSlice'
 
 const Profile = () => {
     const { currentUser, loading, error } = useSelector((state)=>state.user);
@@ -71,12 +71,45 @@ const Profile = () => {
             dispatch(updateUserFailure(err.message));
         }
     }
+
+    const handleSignOut = async (ev)=>{
+        try{
+            dispatch(signOutUserStart());
+            const res = await fetch('/api/auth/signout');
+            const data = await res.json();
+            if(data.success === false){
+                dispatch(signOutUserFailure(data.message));
+                return;
+            }
+            dispatch(signOutUserSuccess());
+        }catch(err){
+            dispatch(signOutUserFailure(err.message));
+        }
+    }
+
+    const handleDeleteUser = async () => {
+        try {
+            dispatch(deleteUserStart());
+            const res = await fetch(`/api/user/delete/${currentUser._id}`, {
+                method: 'DELETE',
+            });
+            const data = await res.json();
+            if (data.success === false) {
+                dispatch(deleteUserFailure(data.message));
+                return;
+            }
+            dispatch(deleteUserSuccess(data));
+        }catch(err){
+            dispatch(deleteUserFailure(err.message));
+        }
+    };
+
     return (
         <div className=' p-3 max-w-lg mx-auto'>
             <h1 className=' text-3xl font-semibold text-center my-7'>Profile</h1>
             <form className=' flex flex-col gap-4' onSubmit={ handleSubmit }>
                 <input type="file" ref={fileref} hidden accept='image/*' onChange={(ev)=>setImage(ev.target.files[0])}/>
-                <img onClick={()=>fileref.current.click()} className=' w-24 h-24 rounded-full self-center ' src={formData.avatar || currentUser.avatar} alt="img" />
+                <img onClick={()=>fileref.current.click()} className=' hover:opacity-95 cursor-pointer w-24 h-24 rounded-full self-center ' src={formData.avatar || currentUser.avatar} alt="img" />
                 <div className=' text-sm self-center'>
                     { uploadImageError ? (<span className=' text-red-700'>Error Image Upload</span>) : 
                         ((imagePerc > 0 &&  imagePerc < 100 ) ? (<span className=' text-slate-700'> { `Uploading ${imagePerc}%`} </span>) : 
@@ -92,8 +125,8 @@ const Profile = () => {
                 </button>
             </form>
             <div className=' flex justify-between mt-5'>
-                <span className='text-red-700 cursor-pointer'>Delete Account</span>
-                <span className='text-red-700 cursor-pointer'>Sign Out</span>
+                <span onClick={ handleDeleteUser } className='text-red-700 cursor-pointer'>Delete Account</span>
+                <span onClick={ handleSignOut } className='text-red-700 cursor-pointer'>Sign Out</span>
             </div>
             <p className='text-red-700 mt-5'>{error ? error : ''}</p>
             <p className='text-green-700 mt-5'>
