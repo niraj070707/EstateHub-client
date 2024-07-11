@@ -1,6 +1,8 @@
+import { getDownloadURL, getStorage, ref, uploadBytesResumable } from 'firebase/storage';
 import React, { useState } from 'react'
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { app } from '../firebase';
 
 const CreateListing = () => {
     const [imageUploadError, setImageUploadError] = useState(false);
@@ -27,15 +29,57 @@ const CreateListing = () => {
     console.log(formData);
 
     const handleImageSubmit = async (ev)=>{
+        if(files.length > 0 && files.length + formData.imageUrls.length < 7){
+            setUploading(true);
+            setImageUploadError(false);
+            const promises = [];
+            
+            for(let i=0;i<files.length; i++){
+                promises.push(storeImage(files[i]));
+            }
 
+            Promise.all(promises).then((urls)=>{
+                setFormData({...formData, imageUrls: formData.imageUrls.concat(urls) });
+                setImageUploadError(false);
+                setUploading(false);
+            }).catch((err)=>{
+                setImageUploadError(`Image upload failed (2 mb max per image)`)
+                setUploading(false);
+            })
+        }else{
+            setImageUploadError('You can upload 6 images per listing');
+            setUploading(false);
+        }
     }
 
-    const handleImageUpload = async (ev)=>{
+    const storeImage = async (file) => {
+        return new Promise((resolve, reject) => {
+            const storage = getStorage(app);
+            const fileName = new Date().getTime() + file.name;
+            const storageRef = ref(storage, fileName);
+            const uploadTask = uploadBytesResumable(storageRef, file);
+            uploadTask.on(
+                "state_changed",
+                (snapshot) => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    console.log(`Upload progress : ${Math.round(progress)}`);
+                },
+                (error) => {
+                    reject(error);
+                },
+                () => {
+                    getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) =>{
+                        resolve(downloadURL);
+                    });
+                }
+            )
         
+        })
     }
 
-    const handleRemoveImage = async (ev)=>{
-        
+
+    const handleRemoveImage = (index)=>{
+        setFormData({ ... formData , imageUrls: formData.imageUrls.filter((_, i)=> i!==index) })
     }
 
     const handleChange = (ev)=>{
