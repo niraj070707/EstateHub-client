@@ -1,5 +1,5 @@
 import { getDownloadURL, getStorage, ref, uploadBytesResumable } from 'firebase/storage';
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { app } from '../firebase';
@@ -79,15 +79,49 @@ const CreateListing = () => {
 
 
     const handleRemoveImage = (index)=>{
-        setFormData({ ... formData , imageUrls: formData.imageUrls.filter((_, i)=> i!==index) })
+        setFormData({ ...formData , imageUrls: formData.imageUrls.filter((_, i)=> i!==index) })
     }
 
     const handleChange = (ev)=>{
-
+        if(ev.target.id === 'sale' || ev.target.id === 'rent'){
+            setFormData({...formData, type: ev.target.id});
+        }
+        if(ev.target.id === 'parking' || ev.target.id === 'furnished' || ev.target.id === 'offer'){
+            setFormData({...formData, [ev.target.id]: ev.target.checked})
+        }
+        if(ev.target.type === 'text' || ev.target.type === 'number' || ev.target.type === 'textarea' ){
+            setFormData({...formData, [ev.target.id]: ev.target.value});
+        }
     }
 
     const handleSubmit = async (ev)=>{
-
+        ev.preventDefault();
+        if(formData.imageUrls.length < 1){return setError('!! You must upload at least one image !!');}
+        if(formData.regularPrice < formData.discountPrice){return setError('!! Discount price should be less than regular price !!');}
+        try{
+            setLoading(true);
+            setError(false);
+            const res = await fetch('api/listing/create', {
+                method: 'POST',
+                headers: {
+                    'Content-type': 'application/json',
+                },
+                body: JSON.stringify({
+                    ...formData,
+                    userRef: currentUser._id
+                }),
+                
+            });
+            const data = await res.json();
+            setLoading(false);
+            if(data.success === false){
+                setError(data.message);
+            }
+            navigate(`listing/${data._id}`);
+        }catch(err){
+            setError(err.message);
+            setLoading(false);
+        }
     }
     
     return (
