@@ -21,7 +21,7 @@ const Signup = () => {
         ev.preventDefault();
         try{
             dispatch(signInBegin());
-            const result = await fetch('/api/auth/signup', {
+            const result = await fetch('https://estatehub-server.onrender.com/api/auth/signup', {
                 method : 'POST',
                 headers : {
                     'Content-Type' : 'application/json',
