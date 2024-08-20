@@ -20,7 +20,7 @@ const Signin = () => {
         ev.preventDefault();
         try{
             dispatch(signInBegin());
-            const result = await fetch('https://estatehub-server.onrender.com/api/auth/signin', {
+            const result = await fetch('/api/auth/signin', {
                 method : 'POST',
                 headers : {
                     'Content-Type' : 'application/json',

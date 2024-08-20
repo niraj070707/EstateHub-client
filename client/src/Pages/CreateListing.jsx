@@ -100,7 +100,7 @@ const CreateListing = () => {
         try {
             setLoading(true);
             setError(false);
-            const res = await fetch('https://estatehub-server.onrender.com/api/listing/create', {
+            const res = await fetch('/api/listing/create', {
                 method: 'POST',
                 headers: {
                     'Content-type': 'application/json',
